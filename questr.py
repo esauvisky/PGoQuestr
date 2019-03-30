@@ -1,26 +1,25 @@
 #!/usr/bin/env python3.7
 import argparse
 import asyncio
-import re
-from sys import platform
-import time
-
-from PIL import Image
-import sys
-from pyocr import pyocr
-from pyocr import builders
-import yaml
-
-from pokemonlib import PokemonGo
-from COOLmeDOWN import splitCoords, calculate, calculateCD
-
 import logging
+import re
+import sys
+import time
+from sys import platform
+
+import yaml
 from colorlog import ColoredFormatter
-logger = logging.getLogger('questr')
+from PIL import Image
+from pyocr import builders, pyocr
+
+from COOLmeDOWN import calculate, calculateCD, splitCoords
+from pokemonlib import PokemonGo
+
+logger = logging.getLogger('ivcheck')
 logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
-formatter = ColoredFormatter("  %(log_color)s%(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s")
+formatter = ColoredFormatter("  %(log_color)s[%(asctime)s] %(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s")
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
@@ -41,10 +40,12 @@ class Main:
         self.p = PokemonGo()
 
     async def hue_affinity(self, im, hue1, hue2):
-        '''Checks if the image's hue (i.e.: "main color")
-        is closer to hue1 than to hue2. All values are in
-        range 0-255, instead of the common 0-360 used for
-        HSL and HSV images.
+        '''Checks the affinity, in percentual terms,
+        of the average median im hue against hue1 and
+        hue2.
+
+        Input values are in range 0-255, instead of
+        the common 0-360° used for HSL and HSV images.
 
         Arguments:
             image {Image}   -- PIL.Image
@@ -52,12 +53,13 @@ class Main:
             hue2  {int}     -- 0-255
 
         Returns:
-            {tuple}   -- A tuple contains the percentual distance
-                           between hue and hue1, hue and hue2.
+            {tuple}   -- A tuple containing the relative
+                         percentages lenghts of the arcs
+                         between im's median hue against
+                         hue1 and hue2, respectively.
         '''
-
         ## Image filtering mumbojumbo
-        im = im.quantize(colors=1, kmeans=5)
+        im = im.quantize(colors=2, kmeans=5)
         im = im.resize((1, 1))
         im = im.convert('HSV')
         pixel = im.getpixel((0, 0))
@@ -65,10 +67,11 @@ class Main:
         ## Gets us one only int, the average hue of the image
         hue = pixel[0]
 
-        ## Angles:
+        ## The Angles
         # The modulus makes it a polar function, i.e.:
         # everything that overflows or underflows 255
-        # becomes the difference.
+        # becomes the difference, so we don't need to
+        # translate values nor calculate distances :)
         a1 = abs(hue-hue1) % 255
         a2 = abs(hue-hue2) % 255
 
@@ -171,7 +174,7 @@ class Main:
                 logger.debug("We're certainly on a non spun pokestop yet! :D We shall wait for the cooldown.")
                 while not time.time() > time_when_cooldown_ends:
                     sys.stdout.write("\r")
-                    sys.stdout.write("{:2d} seconds remaining.".format(time_when_cooldown_ends - time.time()))
+                    sys.stdout.write("{:2f} seconds remaining.".format(time_when_cooldown_ends - time.time()))
                     sys.stdout.flush()
                     await asyncio.sleep(1)
                 logger.warning("Cooldown is OVER! Let's go.")
@@ -251,30 +254,31 @@ class Main:
                     actions_so_far -= 1
                     break
                 elif result == 'ok':
+                    actions_so_far += 1
+                    if actions_so_far >= args.num:
+                        # Finished, can claim quest
+                        await self.tap('quest_button')
+
+                        claim_text = await self.cap_and_crop('claim_reward_box')
+                        if any(word not in claim_text for word in ['CLAIM', 'REWARD']):
+                            logger.error("Seems we didn't finished it yet. Let's keep going!")
+                            continue
+
+                        logger.warning("Cool, we got another one! :D ")
+                        await self.tap('claim_reward_box')
+                        await self.tap('exit_encounter')
+                        actions_so_far = 0
+
                     next_quest = quest_list[num + 1]
                     next_quest_coords = splitCoords(next_quest)
                     cooldown_until_next_stop = calculateCD(calculate(*quest_coords, *next_quest_coords)) * 60  # in seconds
+
                     time_taken = time.time() - time_start
-                    total_time_to_wait = max(0, cooldown_until_next_stop - time_taken) * 1.10  # adds extra 10%
-                    time_when_cooldown_ends = time.time() + total_time_to_wait
-                    logger.info('Cooldown until next PokeStop is %s seconds.', format(total_time_to_wait))
+                    total_time_to_wait = time.time() + max(5, cooldown_until_next_stop - time_taken) * 1.10  # adds extra 10% and fixed 5 sec.
+                    time_when_cooldown_ends = + total_time_to_wait
                     break
 
 
-            actions_so_far += 1
-            if actions_so_far >= args.num:
-                # Finished, can claim quest
-                await self.tap('quest_button')
-
-                claim_text = await self.cap_and_crop('claim_reward_box')
-                if any(word not in claim_text for word in ['CLAIM', 'REWARD']):
-                    logger.error("Seems we didn't finished it yet. Let's keep going!")
-                    continue
-
-                logger.warning("Cool, we got another one! :D ")
-                await self.tap('claim_reward_box')
-                await self.tap('exit_encounter')
-                actions_so_far = 0
 
 
 if __name__ == '__main__':

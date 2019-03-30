@@ -65,7 +65,7 @@ class PokemonGo(object):
         return self.device_id
 
     async def run(self, args):
-        logger.info("Running %s", args)
+        logger.debug("Running %s", args)
         p = subprocess.Popen([str(arg) for arg in args], stdout=subprocess.PIPE)
         stdout, stderr = p.communicate()
         logger.debug("Return code %d", p.returncode)
@@ -82,11 +82,11 @@ class PokemonGo(object):
 
     async def start_logcat(self):
         # return_code, stdout, stderr = await self.run(["adb", "-s", await self.get_device(), "shell", "pidof", "-s", "tesmath.calcy"])
-        # logger.info("Running pidof calcy got code %d: %s", return_code, stdout)
+        # logger.debug("Running pidof calcy got code %d: %s", return_code, stdout)
         # self.calcy_pid = stdout.decode('utf-8').strip()
         # cmd = ["adb", "-s", await self.get_device(), "logcat", "-T", "1", "-v", "brief", "--pid", self.calcy_pid]
         cmd = ["adb", "-s", await self.get_device(), "logcat", "-T", "1", "-v", "brief"]
-        logger.info("Starting logcat %s", cmd)
+        logger.debug("Starting logcat %s", cmd)
         self.logcat_task = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
