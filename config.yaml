@@ -1,5 +1,6 @@
 locations:
     pokestop: [540, 1250] # zoom in as far as it goes, then get the coords of your character head
+    # pokestop: [540, 1370] # zoom in as far as it goes, then get the coords of your character head
     spin_swipe: [150, 1040, 540, 1040]
     x_button: [540, 2020]
     quest_button: [1000, 1870]
@@ -12,10 +13,11 @@ locations:
                                                         #   happens to get the coordinates)
     shop_button_text_box: [440, 1370, 650, 1450]        # The SHOP text (for checking in case we get stuck on the menu)
     your_bag_is_full_text_box: [400, 1050, 690, 1110]
+    bottom_pokestop_bar: [0, 2000, 1080, 2160]
 
 waits:
     pokestop: 2
-    spin_swipe: 0  # do not change this one
+    spin_swipe: 4
     x_button: 2
     im_a_passenger_button_box: 1
     quest_button: 3

@@ -40,6 +40,48 @@ class Main:
         self.tool = tools[0]
         self.p = PokemonGo()
 
+    async def hue_affinity(self, im, hue1, hue2):
+        '''Checks if the image's hue (i.e.: "main color")
+        is closer to hue1 than to hue2. All values are in
+        range 0-255, instead of the common 0-360 used for
+        HSL and HSV images.
+
+        Arguments:
+            image {Image}   -- PIL.Image
+            hue1  {int}     -- 0-255
+            hue2  {int}     -- 0-255
+
+        Returns:
+            {tuple}   -- A tuple contains the percentual distance
+                           between hue and hue1, hue and hue2.
+        '''
+
+        ## Image filtering mumbojumbo
+        im = im.quantize(colors=1, kmeans=5)
+        im = im.resize((1, 1))
+        im = im.convert('HSV')
+        pixel = im.getpixel((0, 0))
+
+        ## Gets us one only int, the average hue of the image
+        hue = pixel[0]
+
+        ## Angles:
+        # The modulus makes it a polar function, i.e.:
+        # everything that overflows or underflows 255
+        # becomes the difference.
+        a1 = abs(hue-hue1) % 255
+        a2 = abs(hue-hue2) % 255
+
+        logger.info('Detected H:%s (%i%% of H1: %s | %i%% of H2: %s)', hue, a1, hue1, a2, hue2)
+
+        if a1 < a2:
+            # return True
+            return ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100)
+        if a2 < a1:
+            return ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100)
+            # return False
+        raise Exception("Well you got unlucky boy, it's right on the middle")
+
     async def tap(self, location):
         coordinates = self.config['locations'][location]
         if len(coordinates) == 2:
@@ -111,38 +153,70 @@ class Main:
         logger.info('[OCR] Found text: %s', text)
         return text
 
-    async def spin_pokestop(self):
+    async def spin_pokestop(self, time_when_cooldown_ends):
+        '''Spins pokestop
+
+        Returns:
+            {bool} -- True means you can move on to next pokestop, false means not.
+        '''
+
         logger.info('Clicking PokeStop')
         await self.tap('pokestop')
 
-        logger.info('Spinning...')
-        await self.swipe('spin_swipe', 300)
+        while True:
+            screencap = await self.p.screencap()
+            crop = screencap.crop(self.config['locations']['bottom_pokestop_bar'])
+            colors_blue_purple = await self.hue_affinity(crop, 140, 190)
+            if colors_blue_purple[0] < 10:
+                logger.debug("We're certainly on a non spun pokestop yet! :D We shall wait for the cooldown.")
+                while not time.time() > time_when_cooldown_ends:
+                    sys.stdout.write("\r")
+                    sys.stdout.write("{:2d} seconds remaining.".format(time_when_cooldown_ends - time.time()))
+                    sys.stdout.flush()
+                    await asyncio.sleep(1)
+                logger.warning("Cooldown is OVER! Let's go.")
+            elif colors_blue_purple[1] < 10:
+                logger.info("We already spun this pokestop! I'm leaving and moving on!")
+                await self.tap('x_button')
+                return 'skip'
+            else:
+                logger.error("We don't seem to be on the correct place...")
+                return 'repeat'
 
-        await asyncio.sleep(0.3)
-        screencap = await self.p.screencap()
+            logger.info('Spinning...')
+            await self.swipe('spin_swipe', 300)
+            screencap = await self.p.screencap()
+            crop = screencap.crop(self.config['locations']['bottom_pokestop_bar'])
+            colors_blue_purple = await self.hue_affinity(crop, 140, 190)
+            if colors_blue_purple[1] < 10:
+                logger.info('All good! Leaving PokeStop')
+                await self.tap('x_button')
+                return 'ok'
+            else:
+                logger.info('Nah, doesnt look like it worked.')
+                await self.tap('x_button')
+                return 'repeat'
 
-        crop = screencap.crop(self.config['locations']['your_bag_is_full_text_box'])
-        crop.show()
-        text = self.tool.image_to_string(crop).replace("\n", " ")
-        if 'Bag' in text:
-            logger.error('Shit, we need to clear our bag and try again.')
-            await self.tap('x_button')
-            # self.clear_bag()
-            await self.spin_pokestop()
-            return
 
-        crop = screencap.crop(self.config['locations']['your_bag_is_full_text_box'])
-        text = self.tool.image_to_string(crop).replace("\n", " ")
-        if 'again' in text:
-            logger.error("Oh, we're being too precoce. Lets give it a few secs and try again...")
-            await asyncio.sleep(5)
-            await self.tap('x_button')
-            # self.clear_bag()
-            await self.spin_pokestop()
-            return
+        # TODO: figure out the bag thing
+        # await asyncio.sleep(0.35)
+        # screencap = await self.p.screencap()
 
-        logger.info('Leaving PokeStop')
-        await self.tap('x_button')
+        # crop = screencap.crop(self.config['locations']['your_bag_is_full_text_box'])
+        # text = self.tool.image_to_string(crop).replace("\n", " ")
+        # if 'Bag' in text:
+        #     logger.error('Shit, we need to clear our bag and try again.')
+        #     await self.tap('x_button')
+        #     return 'bag'
+        # crop = screencap.crop(self.config['locations']['your_bag_is_full_text_box'])
+        # text = self.tool.image_to_string(crop).replace("\n", " ")
+        # crop.show()
+        # logger.critical(text)
+        # if any(word in text for word in ['try', 'again', 'later']):
+        #     logger.error("Oh, we're being too precoce. Lets give it a few secs and try again...")
+        #     return 'wait'
+
+
 
 
     async def start(self):
@@ -152,48 +226,55 @@ class Main:
             quest_list = file.read().splitlines()
 
         actions_so_far = 0
+        time_start = time_when_cooldown_ends = 0
         for num, quest in enumerate(quest_list, start=1):
-            quest_coords = splitCoords(quest)
+            time_start = time.time()
 
+            quest_coords = splitCoords(quest)
             logger.info('Teleporting to quest number %s, coords: %s', num, quest_coords)
             await self.p.run(["adb", "-s", await self.p.get_device(), "shell", 'am start-foreground-service -a theappninjas.gpsjoystick.TELEPORT --ef lat {} --ef lng {}'.format(*quest_coords)])
             await asyncio.sleep(10)
 
             while await self.check_where_the_hell_are_we() is not 'on_world':
+                # TODO: put something that checks that the pokestop is actually on top of the character
                 logger.info("We still seem to be loading")
                 continue
 
-            await self.spin_pokestop()
+            while True:
+                # TODO: needs to be separated into: open_pokestop and functions for each action.
+                result = await self.spin_pokestop(time_when_cooldown_ends)
+                if result == 'repeat':
+                    await asyncio.sleep(5)
+                    await self.swipe('spin_swipe', 800)
+                    continue
+                elif result == 'skip':
+                    actions_so_far -= 1
+                    break
+                elif result == 'ok':
+                    next_quest = quest_list[num + 1]
+                    next_quest_coords = splitCoords(next_quest)
+                    cooldown_until_next_stop = calculateCD(calculate(*quest_coords, *next_quest_coords)) * 60  # in seconds
+                    time_taken = time.time() - time_start
+                    total_time_to_wait = max(0, cooldown_until_next_stop - time_taken) * 1.10  # adds extra 10%
+                    time_when_cooldown_ends = time.time() + total_time_to_wait
+                    logger.info('Cooldown until next PokeStop is %s seconds.', format(total_time_to_wait))
+                    break
 
-            # Validate/Check/DO action (for other actions rather than spinning)
-            if args.action == 'spin':
-                actions_so_far += 1
 
-            # Finished, can claim quest
-            if actions_so_far == args.num:
+            actions_so_far += 1
+            if actions_so_far >= args.num:
+                # Finished, can claim quest
                 await self.tap('quest_button')
 
-                while 'CLAIM REWARD' not in await self.cap_and_crop('claim_reward_box'):
-                    logger.error("Seems it didn't work. Lets try to spin again from other angle...")
-                    await self.swipe('spin_swipe', 800)
-                    await self.tap('x_button')
-                    await self.spin_pokestop()
-                    await self.tap('quest_button')
+                claim_text = await self.cap_and_crop('claim_reward_box')
+                if any(word not in claim_text for word in ['CLAIM', 'REWARD']):
+                    logger.error("Seems we didn't finished it yet. Let's keep going!")
                     continue
 
-                logger.warning("Cool, it's ok now.")
+                logger.warning("Cool, we got another one! :D ")
                 await self.tap('claim_reward_box')
                 await self.tap('exit_encounter')
                 actions_so_far = 0
-
-            next_quest = quest_list[num + 1]
-            next_quest_coords = splitCoords(next_quest)
-
-            cooldown_until_next_stop = calculateCD(calculate(*quest_coords, *next_quest_coords)) * 60  # in seconds
-            total_time_to_wait = max(0, cooldown_until_next_stop) + 5  # extra 5 seconds
-
-            logger.info('Cooldown until next PokeStop is %s seconds.', format(total_time_to_wait))
-            await asyncio.sleep(cooldown_until_next_stop)
 
 
 if __name__ == '__main__':
@@ -204,7 +285,7 @@ if __name__ == '__main__':
                         help="Config file location.")
     parser.add_argument('--action', type=str, default='spin',
                         help="Action to perform required by the particular quest type. Available options: Spin N PokeStops"),  #Trade X
-    parser.add_argument('-n', '--num', type=int, default='2',
+    parser.add_argument('-n', '--num', type=int, default='1',
                         help="Number of times that the action must be performed to complete the quest (i.e.: the N on the options below)."
                         + "After the action is performed N times, the completed quest will be claimed, and the process starts again."),
     args = parser.parse_args()
