@@ -64,7 +64,7 @@ class Main:
             duration
         )
         if location in self.config['waits']:
-            logger.info('Waiting ' + str(self.config['waits'][location]) + ' seconds after ' + str(self.config['locations'][location]) + '...')
+            logger.info('Waiting %s seconds after %s...', self.config['waits'][location], self.config['locations'][location])
             await asyncio.sleep(self.config['waits'][location])
 
     async def key(self, keycode):
