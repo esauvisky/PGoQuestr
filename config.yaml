@@ -1,0 +1,20 @@
+locations:
+    pokestop: [540, 1250] # zoom in as far as it goes, then get the coords of your character head
+    spin_swipe: [150, 1040, 540, 1040]
+    x_button: [540, 2020]
+    quest_button: [1000, 1870]
+    claim_reward_box: [320, 1230, 750, 1310]        # the first CLAIM REWARD! text box (NOT THE QUEST STORAGE ONE!)
+                                                    #  you must have at least one pokemon in quest storage.
+    im_a_passenger_button_box: [320, 1425, 760, 1490]   # the text on I'M A PASSENGER button
+    oh_hatching_box: [430, 430, 700, 640]               # the text Oh? when the egg hatches
+                                                        #   (you'll have to wait until it
+                                                        #   happens to get the coordinates)
+
+waits:
+    pokestop: 2
+    spin_swipe: 2
+    x_button: 1.5
+    im_a_passenger_button_box: 2
+
+configs:
+    # action_each: 2   # execute intended action (trade, )
