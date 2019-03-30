@@ -5,16 +5,22 @@ locations:
     quest_button: [1000, 1870]
     claim_reward_box: [320, 1230, 750, 1310]        # the first CLAIM REWARD! text box (NOT THE QUEST STORAGE ONE!)
                                                     #  you must have at least one pokemon in quest storage.
+    exit_encounter: [90, 150]                       # exit button on the pokemon encounter
     im_a_passenger_button_box: [320, 1425, 760, 1490]   # the text on I'M A PASSENGER button
     oh_hatching_box: [430, 430, 700, 640]               # the text Oh? when the egg hatches
                                                         #   (you'll have to wait until it
                                                         #   happens to get the coordinates)
+    shop_button_text_box: [440, 1370, 650, 1450]        # The SHOP text (for checking in case we get stuck on the menu)
+    your_bag_is_full_text_box: [400, 1050, 690, 1110]
 
 waits:
     pokestop: 2
-    spin_swipe: 2
-    x_button: 1.5
-    im_a_passenger_button_box: 2
+    spin_swipe: 0  # do not change this one
+    x_button: 2
+    im_a_passenger_button_box: 1
+    quest_button: 3
+    claim_reward_box: 5
+    exit_encounter: 3
 
 configs:
     # action_each: 2   # execute intended action (trade, )
