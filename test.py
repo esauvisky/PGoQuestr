@@ -8,14 +8,12 @@ from pokemonlib import PokemonGo
 p = PokemonGo()
 
 async def hue_affinity(hue1, hue2):
-    '''Checks if the image's hue (i.e.: "main color")
-    is closer to hue1 than to hue2. All values are in
-    range 0-255, instead of the common 0-360 used for
-    HSL and HSV images.
+    '''Checks the affinity, in percentual terms,
+    of the average median im hue against hue1 and
+    hue2.
 
-    Important: This takes in account that hue is a
-               polar function, without the need for
-               translating the values.
+    Input values are in range 0-255, instead of
+    the common 0-360° used for HSL and HSV images.
 
     Arguments:
         image {Image}   -- PIL.Image
@@ -23,33 +21,41 @@ async def hue_affinity(hue1, hue2):
         hue2  {int}     -- 0-255
 
     Returns:
-        True if hue is closer to hue1
-        False if closer to hue2
+        {tuple}   -- A tuple containing the relative
+                        percentages lenghts of the arcs
+                        between im's median hue against
+                        hue1 and hue2, respectively.
     '''
-    image = await p.screencap()
+    ## Image filtering mumbojumbo
+    im = await p.screencap()
+    im = im.crop([240, 1958, 290, 1985])
+    # im = im.quantize()
+    im = im.quantize()
+    im.show()
+    im = im.resize((1, 1))
+    im = im.convert('HSV')
+    pixel = im.getpixel((0, 0))
 
-    crop = image.crop([0, 2000, 1080, 2160])
-    crop = crop.quantize(colors=1, kmeans=5)
-    crop = crop.resize((1, 1))
-    crop = crop.convert('HSV')
-    pixel = crop.getpixel((0, 0))
-
-
+    ## Gets us one only int, the average hue of the image
     hue = pixel[0]
-    print('Detected hue was: {}'.format(hue))
 
-    ## Angles
-    # The modulus simulates a polar function, everything
-    # that would overflow 255 becomes the difference.
+    ## The Angles
+    # The modulus makes it a polar function, i.e.:
+    # everything that overflows or underflows 255
+    # becomes the difference, so we don't need to
+    # translate values nor calculate distances :)
     a1 = abs(hue-hue1) % 255
     a2 = abs(hue-hue2) % 255
 
 
-    if a1 < a2:
-        # return True
-        print( ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100))
-    if a2 < a1:
-        print( ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100))
-    raise Exception("Well you got unlucky boy, it's right on the middle")
+    logging.info('Detected H:%s (%i%% of H1: %s | %i%% of H2: %s)', hue, a1, hue1, a2, hue2)
 
-asyncio.run(hue_affinity(140, 200))
+    if a1 < a2:
+        return True
+        # return ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100)
+    if a2 < a1:
+        return False
+        # return ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100)
+        raise Exception("Well you got unlucky boy, it's right on the middle")
+
+asyncio.run(hue_affinity(130, 200))

@@ -59,7 +59,7 @@ class Main:
                          hue1 and hue2, respectively.
         '''
         ## Image filtering mumbojumbo
-        im = im.quantize(colors=2, kmeans=5)
+        im = im.quantize()
         im = im.resize((1, 1))
         im = im.convert('HSV')
         pixel = im.getpixel((0, 0))
@@ -75,14 +75,17 @@ class Main:
         a1 = abs(hue-hue1) % 255
         a2 = abs(hue-hue2) % 255
 
-        logger.info('Detected H:%s (%i%% of H1: %s | %i%% of H2: %s)', hue, a1, hue1, a2, hue2)
+        # This is just for giggles
+        confidence = (1 - (min(a1, a2) / max(a1, a2))) * 100
+
+        logger.info('Detected H: %s (%i%% of H1: %s | %i%% of H2: %s) with a confidence of %i%%', hue, a1, hue1, a2, hue2, confidence)
 
         if a1 < a2:
-            # return True
-            return ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100)
+            return True
+            # return ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100)
         if a2 < a1:
-            return ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100)
-            # return False
+            return False
+            # return ((((a1 + hue) / hue) - 1) * 100, (((a2 + hue) / hue) - 1) * 100)
         raise Exception("Well you got unlucky boy, it's right on the middle")
 
     async def tap(self, location):
@@ -169,16 +172,19 @@ class Main:
         while True:
             screencap = await self.p.screencap()
             crop = screencap.crop(self.config['locations']['bottom_pokestop_bar'])
-            colors_blue_purple = await self.hue_affinity(crop, 140, 190)
-            if colors_blue_purple[0] < 10:
-                logger.debug("We're certainly on a non spun pokestop yet! :D We shall wait for the cooldown.")
-                while not time.time() > time_when_cooldown_ends:
-                    sys.stdout.write("\r")
-                    sys.stdout.write("{:2f} seconds remaining.".format(time_when_cooldown_ends - time.time()))
-                    sys.stdout.flush()
-                    await asyncio.sleep(1)
+            is_color_blue = await self.hue_affinity(crop, 130, 200)
+            if is_color_blue:
+                logger.info("We're certainly on a non spun pokestop yet! :D We shall wait for the cooldown.")
+                while time.time() < time_when_cooldown_ends:
+                    # sys.stdout.write("\r")
+                    # sys.stdout.write("{:2f} seconds remaining.".format(time_when_cooldown_ends - time.time()))
+                    # sys.stdout.flush()
+                    half_life = (time_when_cooldown_ends - time.time()) / 2
+                    logger.info('%f seconds to go...', half_life)
+                    half_life = half_life if half_life >= 2 else 2
+                    await asyncio.sleep(half_life)
                 logger.warning("Cooldown is OVER! Let's go.")
-            elif colors_blue_purple[1] < 10:
+            elif not is_color_blue:
                 logger.info("We already spun this pokestop! I'm leaving and moving on!")
                 await self.tap('x_button')
                 return 'skip'
@@ -190,8 +196,8 @@ class Main:
             await self.swipe('spin_swipe', 300)
             screencap = await self.p.screencap()
             crop = screencap.crop(self.config['locations']['bottom_pokestop_bar'])
-            colors_blue_purple = await self.hue_affinity(crop, 140, 190)
-            if colors_blue_purple[1] < 10:
+            is_color_blue = await self.hue_affinity(crop, 130, 200)
+            if not is_color_blue:
                 logger.info('All good! Leaving PokeStop')
                 await self.tap('x_button')
                 return 'ok'
@@ -234,7 +240,7 @@ class Main:
             time_start = time.time()
 
             quest_coords = splitCoords(quest)
-            logger.info('Teleporting to quest number %s, coords: %s', num, quest_coords)
+            logger.warning('Teleporting to quest number %s, coords: %s', num, quest_coords)
             await self.p.run(["adb", "-s", await self.p.get_device(), "shell", 'am start-foreground-service -a theappninjas.gpsjoystick.TELEPORT --ef lat {} --ef lng {}'.format(*quest_coords)])
             await asyncio.sleep(10)
 
@@ -275,7 +281,7 @@ class Main:
 
                     time_taken = time.time() - time_start
                     total_time_to_wait = time.time() + max(5, cooldown_until_next_stop - time_taken) * 1.10  # adds extra 10% and fixed 5 sec.
-                    time_when_cooldown_ends = + total_time_to_wait
+                    time_when_cooldown_ends = time.time() + total_time_to_wait
                     break
 
 

@@ -13,7 +13,8 @@ locations:
                                                         #   happens to get the coordinates)
     shop_button_text_box: [440, 1370, 650, 1450]        # The SHOP text (for checking in case we get stuck on the menu)
     your_bag_is_full_text_box: [400, 1050, 690, 1110]
-    bottom_pokestop_bar: [0, 2000, 1080, 2160]
+    # bottom_pokestop_bar: [0, 2000, 1080, 2160]
+    bottom_pokestop_bar: [240, 1958, 300, 1985]
 
 waits:
     pokestop: 2
