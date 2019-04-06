@@ -1,9 +1,8 @@
 locations:
-    pokestop: [540, 1250] # zoom in as far as it goes, then get the coords of your character head
-    # pokestop: [540, 1370] # zoom in as far as it goes, then get the coords of your character head
-    spin_swipe: [150, 1040, 540, 1040]
-    x_button: [540, 2020]
-    quest_button: [1000, 1870]
+    pokestop: [540, 1250]   # zoom in as far as it goes, then get the coords around your character's head
+    spin_swipe: [150, 1040, 540, 1040]              # Any movement that spins a pokestop
+    x_button: [540, 2020]                           # The X or Pokeball bottom-center button
+    quest_button: [1000, 1870]                      # The orange button quest
     claim_reward_box: [320, 1230, 750, 1310]        # the first CLAIM REWARD! text box (NOT THE QUEST STORAGE ONE!)
                                                     #  you must have at least one pokemon in quest storage.
     exit_encounter: [90, 150]                       # exit button on the pokemon encounter
@@ -12,9 +11,12 @@ locations:
                                                         #   (you'll have to wait until it
                                                         #   happens to get the coordinates)
     shop_button_text_box: [440, 1370, 650, 1450]        # The SHOP text (for checking in case we get stuck on the menu)
-    your_bag_is_full_text_box: [400, 1050, 690, 1110]
-    # bottom_pokestop_bar: [0, 2000, 1080, 2160]
-    bottom_pokestop_bar: [240, 1958, 300, 1985]
+    bottom_pokestop_bar: [240, 1958, 300, 1985]         # This must be a piece of the bottom curved bar when you open a
+                                                        #  pokestop. Preferably, choose a small square from the lighter
+                                                        #  top border, tho selecting a huge rectangle will probably work
+                                                        #  as well. Whatever you choose, it MUST be able to distinguish
+                                                        #  between BLUE (when pokestop is able to be spun) and PURPLE,
+                                                        #  just after it was spun.
 
 waits:
     pokestop: 2
