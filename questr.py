@@ -174,6 +174,8 @@ class Main:
     async def cap_and_crop(self, location):
         screencap = await self.p.screencap()
         crop = screencap.crop(self.config['locations'][location])
+        if self.debug:
+            crop.show()
         text = self.tool.image_to_string(crop).replace("\n", " ")
         logger.info('[OCR] Found text: %s', text)
         return text
@@ -251,6 +253,10 @@ class Main:
 
 
     async def start(self):
+        if args.debug:
+            logger.setLevel(logging.DEBUG)
+            self.debug = True
+
         await self.p.set_device(self.args.device_id)
 
         with open('quest_list.txt', 'r') as file:
@@ -356,6 +362,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--num', type=int, default='1',
                         help="Number of times that the action must be performed to complete the quest (i.e.: the N on the options below)."
                         + "After the action is performed N times, the completed quest will be claimed, and the process starts again.")
+    parser.add_argument("-d", "--debug", action="store_true", default=False,
+                        help="Activates debugging and verbosity.")
     args = parser.parse_args()
 
     asyncio.run(Main(args).start())
