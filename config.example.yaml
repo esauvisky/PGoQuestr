@@ -1,9 +1,9 @@
 locations:
-    pokestop: [540, 1250]   # zoom in as far as it goes, then get the coords around your character's head
+    pokestop: [540, 1250]                           # zoom in as far as it goes, then get the coords around your character's head
     spin_swipe: [150, 1040, 540, 1040]              # Any movement that spins a pokestop
     x_button: [540, 2020]                           # The X or Pokeball bottom-center button
     quest_button: [1000, 1870]                      # The orange button quest
-    claim_storage_box: [320, 940, 750, 1030]         # the first CLAIM REWARD! text box (THE QUEST STORAGE ONE!)
+    claim_storage_box: [320, 940, 750, 1030]        # the first CLAIM REWARD! text box (THE QUEST STORAGE ONE!)
     claim_reward_box: [320, 1230, 750, 1310]        # the first CLAIM REWARD! text box (NOT THE QUEST STORAGE ONE!)
                                                     #  you must have at least one pokemon in quest storage.
     exit_encounter: [90, 150]                       # exit button on the pokemon encounter
@@ -19,10 +19,10 @@ locations:
                                                         #  between BLUE (when pokestop is able to be spun) and PURPLE,
                                                         #  just after it was spun.
 
-    second_app_position: [820, 1300]  # where to click to switch to the second app after the app switcher is opened
-    character_menu_button: [130, 1980]
-    friends_tab: [730, 200]
-    friend_position: [540, 800]
+    second_app_position: [820, 1300]                    # where to click to switch to the second app after the app switcher is opened
+    character_menu_button: [130, 1980]                  # the bottom right button that opens your character stats and friends tab
+    friends_tab: [730, 200]                             # friends tab location
+    friend_position: [540, 800]                         # friend position (tip: use nickname to sort and name it AAAAAAA lol)
 
 waits:
     pokestop: 2
@@ -37,6 +37,3 @@ waits:
     friends_tab: 2
     friend_position: 3
     keycode_back: 4
-
-configs:
-    # action_each: 2   # execute intended action (trade, )
