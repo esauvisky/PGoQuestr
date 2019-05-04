@@ -21,7 +21,7 @@ def create_data_model():
     return data
 
 
-def compute_euclidean_distance_matrix(locations):
+def compute_haversine_distance(locations):
     """Creates callback to return distance between points."""
     distances = {}
     for from_counter, from_node in enumerate(locations):
@@ -30,9 +30,10 @@ def compute_euclidean_distance_matrix(locations):
             if from_counter == to_counter:
                 distances[from_counter][to_counter] = 0
             else:
-                # Euclidean distance
+                # Euclidean distance (useless for a sphere, lol)
                 # distances[from_counter][to_counter] = (int(math.hypot((from_node[0] - to_node[0]), (from_node[1] - to_node[1]))))
-                # Harvesian distance
+
+                # Haversine distance (the same PoGo uses)
                 distances[from_counter][to_counter] = (int(gpxpy.geo.haversine_distance(from_node[0], from_node[1], to_node[0], to_node[1])))
     return distances
 
@@ -67,7 +68,7 @@ def main():
     # Create Routing Model.
     routing = pywrapcp.RoutingModel(manager)
 
-    distance_matrix = compute_euclidean_distance_matrix(data['locations'])
+    distance_matrix = compute_haversine_distance(data['locations'])
 
     def distance_callback(from_index, to_index):
         """Returns the distance between the two nodes."""

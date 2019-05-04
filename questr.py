@@ -350,10 +350,10 @@ if __name__ == '__main__':
     parser.add_argument('--config', type=str, default='config.yaml',
                         help="Config file location.")
     parser.add_argument('--action', type=str, default='spin',
-                        help="Action to perform required by the particular quest type. Available options: Spin N PokeStops"),  #Trade X
+                        help="Action to perform required by the particular quest type. Available options: Spin N PokeStops")  #Trade X
     parser.add_argument('-n', '--num', type=int, default='1',
                         help="Number of times that the action must be performed to complete the quest (i.e.: the N on the options below)."
-                        + "After the action is performed N times, the completed quest will be claimed, and the process starts again."),
+                        + "After the action is performed N times, the completed quest will be claimed, and the process starts again.")
     args = parser.parse_args()
 
     asyncio.run(Main(args).start())
