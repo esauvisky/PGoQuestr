@@ -6,6 +6,7 @@ import re
 import sys
 import time
 from sys import platform
+import os
 
 import yaml
 from colorlog import ColoredFormatter
@@ -225,7 +226,10 @@ class Main:
         #     logger.error("Oh, we're being too precoce. Lets give it a few secs and try again...")
         #     return 'wait'
 
-
+    async def switch_app(self):
+        logger.info('Switching apps...')
+        await self.key('APP_SWITCH')
+        await self.tap('second_app_position')
 
 
     async def start(self):
@@ -257,30 +261,63 @@ class Main:
                     await self.swipe('spin_swipe', 800)
                     continue
                 elif result == 'skip':
-                    actions_so_far -= 1
+                    if args.action == 'trade':
+                        actions_so_far += 1
+                    else:
+                        actions_so_far -= 1
                     break
                 elif result == 'ok':
                     actions_so_far += 1
                     if actions_so_far >= args.num:
-                        # Finished, can claim quest
-                        await self.tap('quest_button')
+                        if args.action == 'trade':
+                            await self.tap('character_menu_button')
+                            await self.tap('friends_tab')
+                            await self.tap('friend_position')
+                            os.system('cd ../PGoTrader/ && ./trade.py --device-id=10.42.0.128 --stop-after 1 && cd ../PGoQuestr')
+                            await asyncio.sleep(8)
+                            await self.key('KEYCODE_BACK')
+                            await self.key('KEYCODE_BACK')
+                            await self.key('KEYCODE_BACK')
+                            # await self.tap('x_button')
+                            # await self.tap('x_button')
 
-                        claim_text = await self.cap_and_crop('claim_reward_box')
-                        if any(word not in claim_text for word in ['CLAIM', 'REWARD']):
-                            logger.error("Seems we didn't finished it yet. Let's keep going!")
-                            continue
+                        await asyncio.sleep(5)
+                        # Finished, can claim quests
+                        passed = False
+                        while True:
+                            await self.tap('quest_button')
 
-                        logger.warning("Cool, we got another one! :D ")
-                        await self.tap('claim_reward_box')
-                        await self.tap('exit_encounter')
+                            if not passed:
+                                storage_text = await self.cap_and_crop('claim_reward_box')
+                                if any(word not in storage_text for word in ['CLAIM', 'REWARD']):
+                                    logger.error('Does not look like we\'re in the right place...')
+                                    await self.key('KEYCODE_BACK')
+                                    continue
+                                else:
+                                    passed = True
+
+                            claim_text = await self.cap_and_crop('claim_reward_box')
+                            if any(word not in claim_text for word in ['CLAIM', 'REWARD']):
+                                logger.error("Seems we finished!")
+                                await self.key('KEYCODE_BACK')
+                                break
+
+                            logger.warning("Cool, we got another one! :D ")
+                            await self.tap('claim_reward_box')
+                            await self.tap('exit_encounter')
+
                         actions_so_far = 0
 
-                    next_quest = quest_list[num + 1]
+                    try:
+                        next_quest = quest_list[num + 1]
+                    except:
+                        logger.critical("We ran out of coords! Bye!")
+                        exit()
                     next_quest_coords = splitCoords(next_quest)
                     cooldown_until_next_stop = calculateCD(calculate(*quest_coords, *next_quest_coords)) * 60  # in seconds
 
-                    time_taken = time.time() - time_start
-                    total_time_to_wait = time.time() + max(5, cooldown_until_next_stop - time_taken) * 1.10  # adds extra 10% and fixed 5 sec.
+                    # time_taken = time.time() - time_start
+                    total_time_to_wait = max(5, cooldown_until_next_stop) * 1.10  # adds extra 10% and fixed 5 sec.
                     time_when_cooldown_ends = time.time() + total_time_to_wait
                     break
 
