@@ -30,7 +30,7 @@ waits:
     x_button: 2
     im_a_passenger_button_box: 1
     quest_button: 3
-    claim_reward_box: 5
+    claim_reward_box: 8
     exit_encounter: 3
     second_app_position: 2
     character_menu_button: 3
