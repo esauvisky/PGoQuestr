@@ -2,8 +2,8 @@
 import argparse
 import asyncio
 import logging
-import re
-import sys
+# import re
+# import sys
 import time
 from sys import platform
 import os
@@ -15,7 +15,6 @@ from pyocr import builders, pyocr
 from COOLmeDOWN import calculate, calculateCD, splitCoords
 from pokemonlib import PokemonGo
 
-import logging
 
 try:
     import colorlog
@@ -297,8 +296,6 @@ class Main:
                             await self.key('KEYCODE_BACK')
                             await self.key('KEYCODE_BACK')
                             await self.key('KEYCODE_BACK')
-                            # await self.tap('x_button')
-                            # await self.tap('x_button')
 
                         await asyncio.sleep(5)
                         # Finished, can claim quests
@@ -306,6 +303,7 @@ class Main:
                         while True:
                             await self.tap('quest_button')
 
+                            # Checks if we're in the quest menu by scanning the stored quests
                             if not passed:
                                 storage_text = await self.cap_and_crop('claim_reward_box')
                                 if any(word not in storage_text for word in ['CLAIM', 'REWARD']):
@@ -315,12 +313,15 @@ class Main:
                                 else:
                                     passed = True
 
+                            # Once we're in, checks for the quests themselves
                             claim_text = await self.cap_and_crop('claim_reward_box')
                             if any(word not in claim_text for word in ['CLAIM', 'REWARD']):
+                                # If no completed quest is found, means we got all of them
                                 logger.error("Seems we finished!")
                                 await self.key('KEYCODE_BACK')
                                 break
 
+                            # Opens one by one and exits encounter
                             logger.warning("Cool, we got another one! :D ")
                             await self.tap('claim_reward_box')
                             await self.tap('exit_encounter')
@@ -332,6 +333,7 @@ class Main:
                     except:
                         logger.critical("We ran out of coords! Bye!")
                         exit()
+
                     next_quest_coords = splitCoords(next_quest)
                     cooldown_until_next_stop = calculateCD(calculate(*quest_coords, *next_quest_coords)) * 60  # in seconds
 
@@ -350,7 +352,7 @@ if __name__ == '__main__':
     parser.add_argument('--config', type=str, default='config.yaml',
                         help="Config file location.")
     parser.add_argument('--action', type=str, default='spin',
-                        help="Action to perform required by the particular quest type. Available options: Spin N PokeStops")  #Trade X
+                        help="Action to perform required by the particular quest type. Available options: 'spin', 'trade'")
     parser.add_argument('-n', '--num', type=int, default='1',
                         help="Number of times that the action must be performed to complete the quest (i.e.: the N on the options below)."
                         + "After the action is performed N times, the completed quest will be claimed, and the process starts again.")
