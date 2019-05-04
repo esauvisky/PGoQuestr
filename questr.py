@@ -9,20 +9,37 @@ from sys import platform
 import os
 
 import yaml
-from colorlog import ColoredFormatter
 from PIL import Image
 from pyocr import builders, pyocr
 
 from COOLmeDOWN import calculate, calculateCD, splitCoords
 from pokemonlib import PokemonGo
 
-logger = logging.getLogger('ivcheck')
-logger.setLevel(logging.INFO)
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-formatter = ColoredFormatter("  %(log_color)s[%(asctime)s] %(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s")
-ch.setFormatter(formatter)
-logger.addHandler(ch)
+import logging
+
+try:
+    import colorlog
+    HAVE_COLORLOG = True
+except ImportError:
+    HAVE_COLORLOG = False
+
+def create_logger():
+    '''Setup the logging environment'''
+    log = logging.getLogger()  # root logger
+    log.setLevel(logging.INFO)
+    format_str = '[%(asctime)s] (%(name)8.8s) %(levelname)8s | %(message)s'
+    date_format = '%Y-%m-%d %H:%M:%S'
+    if HAVE_COLORLOG:
+        cformat = '%(log_color)s' + format_str
+        formatter = colorlog.ColoredFormatter(cformat, date_format)
+    else:
+        formatter = logging.Formatter(format_str, date_format)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    log.addHandler(stream_handler)
+    return logging.getLogger(__name__)
+
+logger = create_logger()
 
 def get_median_location(box_location):
     '''
@@ -101,7 +118,8 @@ class Main:
             if location in self.config['waits']:
                 await asyncio.sleep(self.config['waits'][location])
         else:
-            logger.error('Something is not right.')
+            logger.error('Something is not right.')('KEYCODE_BACK')
+                                # await self.tap('x_button')
             raise Exception
 
     async def swipe(self, location, duration):
@@ -119,6 +137,7 @@ class Main:
     async def key(self, keycode):
         await self.p.key(keycode)
         if str(keycode).lower in self.config['waits']:
+            logger.info('Waiting %s seconds after %s...', self.config['waits'][keycode], self.config['locations'][keycode])
             await asyncio.sleep(self.config['waits'][str(keycode).lower])
 
     async def check_where_the_hell_are_we(self):
