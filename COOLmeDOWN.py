@@ -6,13 +6,6 @@ import re
 # GPXpy Library
 import gpxpy.geo
 
-# GTK Stuff
-import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('Notify', '0.7')
-from gi.repository import Gtk, Gdk, Notify
-
-
 # Colored STDOUT
 CEND = '\033[0m'
 CBOLD = '\033[1m'
@@ -226,6 +219,11 @@ def calculateCD(dist):
 
 
 if __name__ == "__main__":
+    # GTK Stuff
+    import gi
+    gi.require_version('Gtk', '3.0')
+    gi.require_version('Notify', '0.7')
+    from gi.repository import Gtk, Gdk, Notify
     # Initializes the Notify instance
     Notify.init('CoolmDown')
     print(CBOLD + CGREEN + "Keep me cool you dirty spoofer!" + CEND)
