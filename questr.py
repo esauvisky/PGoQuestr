@@ -311,7 +311,7 @@ class Main:
 
                             # Checks if we're in the quest menu by scanning the stored quests
                             if not passed:
-                                storage_text = await self.cap_and_crop('claim_reward_box')
+                                storage_text = await self.cap_and_crop('claim_storage_box')
                                 if any(word not in storage_text for word in ['CLAIM', 'REWARD']):
                                     logger.error('Does not look like we\'re in the right place...')
                                     await self.key('KEYCODE_BACK')
