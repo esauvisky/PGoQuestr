@@ -55,9 +55,9 @@ class Main:
         tools = pyocr.get_available_tools()
         self.tool = tools[0]
         self.p = PokemonGo()
-        if args.debug:
+        self.debug = args.debug
+        if self.debug:
             logger.setLevel(logging.DEBUG)
-            self.debug = True
 
     async def hue_affinity(self, im, hue1, hue2):
         '''Checks the affinity, in percentual terms,
