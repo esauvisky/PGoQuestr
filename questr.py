@@ -227,7 +227,8 @@ class Main:
                 return 'ok'
             else:
                 logger.info('Nah, doesnt look like it worked.')
-                await self.tap('x_button')
+                if await self.check_where_the_hell_are_we() is 'on_world':
+                    await self.tap('x_button')
                 return 'repeat'
 
 
